@@ -3,12 +3,28 @@ body {
   text-align: center;
   background: #faf8ef;
   margin: 0;
-  padding: 0;
+  padding: 20px;
 }
 
 h1 {
-  margin: 20px 0;
+  font-size: 48px;
   color: #776e65;
+  margin-bottom: 10px;
+}
+
+.score-board {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.score-box {
+  background: #bbada0;
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 20px;
+  border-radius: 6px;
 }
 
 .controls {
@@ -16,33 +32,30 @@ h1 {
 }
 
 button {
-  padding: 10px 20px;
   margin: 5px;
+  padding: 8px 16px;
+  font-size: 16px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   background: #8f7a66;
   color: #fff;
-  font-size: 16px;
   cursor: pointer;
 }
 button:hover {
-  background: #9f8b76;
+  background: #9f8b77;
 }
 
-#game-container {
-  width: 90vmin;
-  height: 90vmin;
-  max-width: 500px;
-  max-height: 500px;
-  margin: 0 auto;
+.game-container {
+  width: 400px;
+  height: 400px;
   background: #bbada0;
-  border-radius: 10px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
   gap: 10px;
   padding: 10px;
-  position: relative;
+  border-radius: 10px;
 }
 
 .tile {
@@ -51,17 +64,16 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 28px;
   font-weight: bold;
-  font-size: 2em;
-  color: #776e65;
+  transition: transform 0.15s ease-in-out;
 }
 
 .tile.new {
-  animation: pop 0.2s ease;
+  animation: pop 0.2s;
 }
-
 .tile.merged {
-  animation: merge 0.25s ease;
+  animation: merge 0.2s;
 }
 
 @keyframes pop {
@@ -77,23 +89,17 @@ button:hover {
 
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(238, 228, 218, 0.73);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(238, 228, 218, 0.7);
   display: none;
-  align-items: center;
   justify-content: center;
-  flex-direction: column;
+  align-items: center;
 }
 
-.overlay .message {
-  font-size: 2em;
+.message {
+  background: #f9f6f2;
+  padding: 20px 40px;
+  border-radius: 10px;
+  font-size: 24px;
   color: #776e65;
-  margin-bottom: 20px;
-}
-
-.overlay button {
-  background: #8f7a66;
 }

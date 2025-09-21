@@ -1,32 +1,62 @@
 const SIZE = 4;
 let board = [];
 let history = [];
+let score = 0;
+let bestScore = localStorage.getItem("bestScore") ? parseInt(localStorage.getItem("bestScore")) : 0;
+let mergedTiles = [];
+let newTile = null;
 let gameOver = false;
 let gameWin = false;
 let continuePlaying = false;
 
-let mergedTiles = []; // 本轮合并的方块
-let newTile = null;   // 新生成的方块
-
 const container = document.getElementById("game-container");
 const gameOverOverlay = document.getElementById("game-over");
 const gameWinOverlay = document.getElementById("game-win");
-const restartBtn = document.getElementById("restartBtn");
-const undoBtn = document.getElementById("undoBtn");
-const retryBtn = document.getElementById("retryBtn");
-const continueBtn = document.getElementById("continueBtn");
+const scoreElement = document.getElementById("score");
+const bestScoreElement = document.getElementById("best-score");
+bestScoreElement.textContent = bestScore;
 
-function initBoard() {
-  board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-  addRandomTile();
-  addRandomTile();
-  render();
+function init() {
+  board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
   history = [];
+  score = 0;
+  updateScore(0);
   gameOver = false;
   gameWin = false;
   continuePlaying = false;
   gameOverOverlay.style.display = "none";
   gameWinOverlay.style.display = "none";
+  addRandomTile();
+  addRandomTile();
+  render();
+}
+
+function updateScore(add) {
+  score += add;
+  scoreElement.textContent = score;
+  if (score > bestScore) {
+    bestScore = score;
+    bestScoreElement.textContent = bestScore;
+    localStorage.setItem("bestScore", bestScore);
+  }
+}
+
+function saveHistory() {
+  history.push({
+    board: board.map(row => [...row]),
+    score: score
+  });
+  if (history.length > 5) history.shift();
+}
+
+function undoMove() {
+  if (history.length > 0) {
+    const last = history.pop();
+    board = last.board;
+    score = last.score;
+    scoreElement.textContent = score;
+    render();
+  }
 }
 
 function addRandomTile() {
@@ -39,7 +69,7 @@ function addRandomTile() {
   if (empty.length > 0) {
     const [r, c] = empty[Math.floor(Math.random() * empty.length)];
     board[r][c] = Math.random() < 0.9 ? 2 : 4;
-    newTile = [r, c]; // 标记新生成
+    newTile = [r, c];
   }
 }
 
@@ -50,18 +80,13 @@ function render() {
       const value = board[r][c];
       const tile = document.createElement("div");
       tile.className = "tile";
-
       if (value !== 0) {
         tile.textContent = value;
         tile.style.background = getTileColor(value);
         tile.style.color = value > 4 ? "#f9f6f2" : "#776e65";
-
-        // 是否是合并方块
         if (mergedTiles.some(([mr, mc]) => mr === r && mc === c)) {
           tile.classList.add("merged");
         }
-
-        // 是否是新生成的方块
         if (newTile && newTile[0] === r && newTile[1] === c) {
           tile.classList.add("new");
         }
@@ -69,39 +94,17 @@ function render() {
       container.appendChild(tile);
     }
   }
-
-  // 渲染后清空记录
   mergedTiles = [];
   newTile = null;
 }
 
 function getTileColor(value) {
   const colors = {
-    2: "#eee4da",
-    4: "#ede0c8",
-    8: "#f2b179",
-    16: "#f59563",
-    32: "#f67c5f",
-    64: "#f65e3b",
-    128: "#edcf72",
-    256: "#edcc61",
-    512: "#edc850",
-    1024: "#edc53f",
-    2048: "#edc22e"
+    2: "#eee4da", 4: "#ede0c8", 8: "#f2b179", 16: "#f59563",
+    32: "#f67c5f", 64: "#f65e3b", 128: "#edcf72", 256: "#edcc61",
+    512: "#edc850", 1024: "#edc53f", 2048: "#edc22e",
   };
   return colors[value] || "#3c3a32";
-}
-
-function saveHistory() {
-  history.push(JSON.stringify(board));
-  if (history.length > 5) history.shift();
-}
-
-function undo() {
-  if (history.length > 0) {
-    board = JSON.parse(history.pop());
-    render();
-  }
 }
 
 function move(direction) {
@@ -125,9 +128,9 @@ function move(direction) {
     for (let k = 0; k < line.length; k++) {
       if (line[k] === line[k + 1]) {
         line[k] *= 2;
+        updateScore(line[k]);
         line.splice(k + 1, 1);
 
-        // 记录合并后的目标位置
         let target;
         if (direction === "left") target = [i, k];
         if (direction === "right") target = [i, SIZE - 1 - k];
@@ -170,8 +173,8 @@ function checkGameOver() {
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
       if (board[r][c] === 0) return;
-      if (c < SIZE - 1 && board[r][c] === board[r][c + 1]) return;
       if (r < SIZE - 1 && board[r][c] === board[r + 1][c]) return;
+      if (c < SIZE - 1 && board[r][c] === board[r][c + 1]) return;
     }
   }
   gameOver = true;
@@ -180,8 +183,18 @@ function checkGameOver() {
   }, 100);
 }
 
-// 键盘
-window.addEventListener("keydown", e => {
+function restartGame() {
+  init();
+}
+function continueGame() {
+  continuePlaying = true;
+  gameWinOverlay.style.display = "none";
+}
+
+document.getElementById("undo").addEventListener("click", undoMove);
+document.getElementById("restart").addEventListener("click", restartGame);
+
+document.addEventListener("keydown", e => {
   switch (e.key) {
     case "ArrowLeft": move("left"); break;
     case "ArrowRight": move("right"); break;
@@ -190,15 +203,23 @@ window.addEventListener("keydown", e => {
   }
 });
 
-// 触摸
 let startX, startY;
+
 container.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
+  const t = e.touches[0];
+  startX = t.clientX;
+  startY = t.clientY;
 });
+
+container.addEventListener("touchmove", e => {
+  // 阻止浏览器滚动/下拉刷新
+  e.preventDefault();
+}, { passive: false });
+
 container.addEventListener("touchend", e => {
-  const dx = e.changedTouches[0].clientX - startX;
-  const dy = e.changedTouches[0].clientY - startY;
+  const t = e.changedTouches[0];
+  let dx = t.clientX - startX;
+  let dy = t.clientY - startY;
   if (Math.abs(dx) > Math.abs(dy)) {
     if (dx > 30) move("right");
     else if (dx < -30) move("left");
@@ -208,12 +229,5 @@ container.addEventListener("touchend", e => {
   }
 });
 
-restartBtn.addEventListener("click", initBoard);
-undoBtn.addEventListener("click", undo);
-retryBtn.addEventListener("click", initBoard);
-continueBtn.addEventListener("click", () => {
-  gameWinOverlay.style.display = "none";
-  continuePlaying = true;
-});
 
-initBoard();
+init();
