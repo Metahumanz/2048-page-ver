@@ -1,12 +1,15 @@
 const gridSize = 4;
 let grid = [];
 let score = 0;
+let history = []; // 保存历史（最多 5 步）
 const gridContainer = document.getElementById("grid-container");
 const scoreContainer = document.getElementById("score");
+const undoBtn = document.getElementById("undo-btn");
 
 function initGame() {
   grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
   score = 0;
+  history = [];
   scoreContainer.textContent = score;
   addRandomTile();
   addRandomTile();
@@ -25,7 +28,7 @@ function addRandomTile() {
   grid[r][c] = Math.random() < 0.9 ? 2 : 4;
 }
 
-function drawGrid() {
+function drawGrid(mergedCells = []) {
   gridContainer.innerHTML = "";
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
@@ -36,13 +39,36 @@ function drawGrid() {
         tile.textContent = value;
         tile.dataset.value = value;
       }
+      if (mergedCells.some(cell => cell.r === r && cell.c === c)) {
+        tile.classList.add("merge");
+      }
       gridContainer.appendChild(tile);
     }
   }
 }
 
+function saveHistory() {
+  history.push({
+    grid: grid.map(row => [...row]),
+    score: score
+  });
+  if (history.length > 5) history.shift();
+}
+
+function undo() {
+  if (history.length === 0) return;
+  const last = history.pop();
+  grid = last.grid.map(row => [...row]);
+  score = last.score;
+  scoreContainer.textContent = score;
+  drawGrid();
+}
+
 function move(direction) {
   let moved = false;
+  let mergedCells = [];
+  saveHistory(); // 先保存当前状态
+
   for (let i = 0; i < gridSize; i++) {
     let line = [];
     for (let j = 0; j < gridSize; j++) {
@@ -57,6 +83,7 @@ function move(direction) {
         line[k] *= 2;
         score += line[k];
         line.splice(k + 1, 1);
+        mergedCells.push({ r: direction === "left" || direction === "right" ? i : k, c: direction === "left" || direction === "right" ? k : i });
       }
     }
 
@@ -75,7 +102,9 @@ function move(direction) {
   if (moved) {
     addRandomTile();
     scoreContainer.textContent = score;
-    requestAnimationFrame(drawGrid);
+    requestAnimationFrame(() => drawGrid(mergedCells));
+  } else {
+    history.pop(); // 如果没动，就撤回保存
   }
 }
 
@@ -86,6 +115,33 @@ document.addEventListener("keydown", e => {
     case "ArrowUp": move("up"); break;
     case "ArrowDown": move("down"); break;
   }
+});
+
+undoBtn.addEventListener("click", undo);
+
+// 触摸滑动支持
+let startX, startY;
+gridContainer.addEventListener("touchstart", e => {
+  const touch = e.touches[0];
+  startX = touch.clientX;
+  startY = touch.clientY;
+}, { passive: true });
+
+gridContainer.addEventListener("touchend", e => {
+  if (!startX || !startY) return;
+  const touch = e.changedTouches[0];
+  let dx = touch.clientX - startX;
+  let dy = touch.clientY - startY;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > 30) move("right");
+    else if (dx < -30) move("left");
+  } else {
+    if (dy > 30) move("down");
+    else if (dy < -30) move("up");
+  }
+
+  startX = startY = null;
 });
 
 initGame();
