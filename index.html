@@ -2,26 +2,25 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>2048 高刷版</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048 游戏</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>2048</h1>
-  <div id="game-container">
-    <div id="grid-container"></div>
-    <div id="controls">
-      <button id="undo-btn">撤销</button>
-      <button id="restart-btn">重新开始</button>
-    </div>
-    <div id="score-container">分数: <span id="score">0</span></div>
-    <div id="game-over" class="hidden">
-      <div class="overlay"></div>
-      <div class="message">
-        <p>Game Over!</p>
-        <button id="retry-btn">再来一次</button>
-      </div>
-    </div>
+  <div class="controls">
+    <button id="restartBtn">重新开始</button>
+    <button id="undoBtn">撤销</button>
   </div>
-  <script src="game.js"></script>
+  <div id="game-container"></div>
+  <div id="game-over" class="overlay">
+    <div class="message">Game Over</div>
+    <button id="retryBtn">再来一次</button>
+  </div>
+  <div id="game-win" class="overlay">
+    <div class="message">你赢啦！🎉 达到 2048</div>
+    <button id="continueBtn">继续游戏</button>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>

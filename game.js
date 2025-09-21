@@ -1,164 +1,157 @@
-const gridSize = 4;
-let grid = [];
-let score = 0;
-let undoStack = [];
-let mergedCells = [];
+const SIZE = 4;
+let board = [];
+let history = [];
+let gameOver = false;
+let gameWin = false;
 
-const gridContainer = document.getElementById("grid-container");
-const scoreContainer = document.getElementById("score");
-const undoBtn = document.getElementById("undo-btn");
-const restartBtn = document.getElementById("restart-btn");
-const gameOverDiv = document.getElementById("game-over");
-const retryBtn = document.getElementById("retry-btn");
+const container = document.getElementById("game-container");
+const gameOverOverlay = document.getElementById("game-over");
+const gameWinOverlay = document.getElementById("game-win");
+const restartBtn = document.getElementById("restartBtn");
+const undoBtn = document.getElementById("undoBtn");
+const retryBtn = document.getElementById("retryBtn");
+const continueBtn = document.getElementById("continueBtn");
 
-const cellSize = 100;
-const cellGap = 10;
-
-function initGame() {
-  grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
-  score = 0;
-  undoStack = [];
-  scoreContainer.textContent = score;
-  hideGameOver();
+function initBoard() {
+  board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
   addRandomTile();
   addRandomTile();
-  drawGrid(true);
-}
-
-function saveState() {
-  undoStack.push({ grid: JSON.parse(JSON.stringify(grid)), score });
-  if (undoStack.length > 5) undoStack.shift();
-}
-
-function undo() {
-  if (undoStack.length > 0) {
-    let prev = undoStack.pop();
-    grid = prev.grid;
-    score = prev.score;
-    scoreContainer.textContent = score;
-    drawGrid(true);
-    hideGameOver();
-  }
+  render();
+  history = [];
+  gameOver = false;
+  gameWin = false;
+  gameOverOverlay.style.display = "none";
+  gameWinOverlay.style.display = "none";
 }
 
 function addRandomTile() {
-  let emptyCells = [];
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      if (grid[r][c] === 0) emptyCells.push({ r, c });
+  const empty = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] === 0) empty.push([r, c]);
     }
   }
-  if (emptyCells.length === 0) return;
-  let { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+  if (empty.length > 0) {
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    board[r][c] = Math.random() < 0.9 ? 2 : 4;
+  }
 }
 
-function drawGrid(noAnim = false) {
-  gridContainer.innerHTML = "";
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      let value = grid[r][c];
-      if (value > 0) {
-        const tile = document.createElement("div");
-        tile.className = "tile";
+function render() {
+  container.innerHTML = "";
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const value = board[r][c];
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      if (value !== 0) {
         tile.textContent = value;
-        tile.dataset.value = value;
-        tile.style.left = `${c * (cellSize + cellGap) + cellGap}px`;
-        tile.style.top = `${r * (cellSize + cellGap) + cellGap}px`;
-
-        if (!noAnim && mergedCells.some(m => m.r === r && m.c === c)) {
-          tile.classList.add("merge");
-        } else if (!noAnim) {
-          tile.classList.add("new");
-        }
-
-        gridContainer.appendChild(tile);
+        tile.style.background = getTileColor(value);
+        tile.style.color = value > 4 ? "#f9f6f2" : "#776e65";
       }
+      container.appendChild(tile);
     }
   }
-  mergedCells = [];
+}
+
+function getTileColor(value) {
+  const colors = {
+    2: "#eee4da",
+    4: "#ede0c8",
+    8: "#f2b179",
+    16: "#f59563",
+    32: "#f67c5f",
+    64: "#f65e3b",
+    128: "#edcf72",
+    256: "#edcc61",
+    512: "#edc850",
+    1024: "#edc53f",
+    2048: "#edc22e"
+  };
+  return colors[value] || "#3c3a32";
+}
+
+function saveHistory() {
+  history.push(JSON.stringify(board));
+  if (history.length > 5) history.shift();
+}
+
+function undo() {
+  if (history.length > 0) {
+    board = JSON.parse(history.pop());
+    render();
+  }
 }
 
 function move(direction) {
-  saveState();
-  let moved = false;
-  mergedCells = [];
+  if (gameOver || (gameWin && !continuePlaying)) return;
 
-  const moveLine = (line, rowOrCol, isRow) => {
-    line = line.filter(v => v !== 0);
-    for (let i = 0; i < line.length - 1; i++) {
-      if (line[i] === line[i + 1]) {
-        line[i] *= 2;
-        score += line[i];
-        mergedCells.push(isRow ? { r: rowOrCol, c: i } : { r: i, c: rowOrCol });
-        line.splice(i + 1, 1);
+  saveHistory();
+  let moved = false;
+
+  for (let i = 0; i < SIZE; i++) {
+    let line = [];
+    for (let j = 0; j < SIZE; j++) {
+      let val;
+      if (direction === "left") val = board[i][j];
+      if (direction === "right") val = board[i][SIZE - 1 - j];
+      if (direction === "up") val = board[j][i];
+      if (direction === "down") val = board[SIZE - 1 - j][i];
+      if (val !== 0) line.push(val);
+    }
+    let merged = [];
+    for (let k = 0; k < line.length; k++) {
+      if (line[k] === line[k + 1]) {
+        line[k] *= 2;
+        merged.push(line[k]);
+        line.splice(k + 1, 1);
       }
     }
-    while (line.length < gridSize) line.push(0);
-    return line;
-  };
+    while (line.length < SIZE) line.push(0);
 
-  for (let i = 0; i < gridSize; i++) {
-    let line = [];
-    for (let j = 0; j < gridSize; j++) {
-      let value = (direction === "left" || direction === "right") ? grid[i][j] : grid[j][i];
-      line.push(value);
-    }
+    for (let j = 0; j < SIZE; j++) {
+      let val = line[j];
+      let target;
+      if (direction === "left") target = [i, j];
+      if (direction === "right") target = [i, SIZE - 1 - j];
+      if (direction === "up") target = [j, i];
+      if (direction === "down") target = [SIZE - 1 - j, i];
 
-    if (direction === "right" || direction === "down") line.reverse();
+      if (board[target[0]][target[1]] !== val) moved = true;
+      board[target[0]][target[1]] = val;
 
-    let newLine = moveLine(line, i, direction === "left" || direction === "right");
-
-    if (direction === "right" || direction === "down") newLine.reverse();
-
-    for (let j = 0; j < gridSize; j++) {
-      let newValue = newLine[j];
-      let oldValue = (direction === "left" || direction === "right") ? grid[i][j] : grid[j][i];
-      if (newValue !== oldValue) moved = true;
-      if (direction === "left" || direction === "right") grid[i][j] = newValue;
-      else grid[j][i] = newValue;
+      if (val >= 2048 && !gameWin) {
+        gameWin = true;
+        setTimeout(() => {
+          gameWinOverlay.style.display = "flex";
+        }, 100);
+      }
     }
   }
 
   if (moved) {
     addRandomTile();
-    scoreContainer.textContent = score;
-    drawGrid();
+    render();
     checkGameOver();
-  } else {
-    undoStack.pop(); // 撤销无效移动的存档
   }
 }
 
 function checkGameOver() {
-  // 有空格就没结束
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      if (grid[r][c] === 0) return;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] === 0) return;
+      if (c < SIZE - 1 && board[r][c] === board[r][c + 1]) return;
+      if (r < SIZE - 1 && board[r][c] === board[r + 1][c]) return;
     }
   }
-  // 检查是否还能合并
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      if ((r < gridSize - 1 && grid[r][c] === grid[r + 1][c]) ||
-          (c < gridSize - 1 && grid[r][c] === grid[r][c + 1])) {
-        return;
-      }
-    }
-  }
-  showGameOver();
-}
-
-function showGameOver() {
-  gameOverDiv.classList.remove("hidden");
-}
-
-function hideGameOver() {
-  gameOverDiv.classList.add("hidden");
+  gameOver = true;
+  setTimeout(() => {
+    gameOverOverlay.style.display = "flex";
+  }, 100);
 }
 
 // 键盘控制
-document.addEventListener("keydown", e => {
+window.addEventListener("keydown", e => {
   switch (e.key) {
     case "ArrowLeft": move("left"); break;
     case "ArrowRight": move("right"); break;
@@ -167,16 +160,15 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// 触摸滑动控制
+// 触摸控制
 let startX, startY;
-gridContainer.addEventListener("touchstart", e => {
+container.addEventListener("touchstart", e => {
   startX = e.touches[0].clientX;
   startY = e.touches[0].clientY;
-}, { passive: true });
-
-gridContainer.addEventListener("touchend", e => {
-  let dx = e.changedTouches[0].clientX - startX;
-  let dy = e.changedTouches[0].clientY - startY;
+});
+container.addEventListener("touchend", e => {
+  const dx = e.changedTouches[0].clientX - startX;
+  const dy = e.changedTouches[0].clientY - startY;
   if (Math.abs(dx) > Math.abs(dy)) {
     if (dx > 30) move("right");
     else if (dx < -30) move("left");
@@ -184,12 +176,13 @@ gridContainer.addEventListener("touchend", e => {
     if (dy > 30) move("down");
     else if (dy < -30) move("up");
   }
-}, { passive: true });
+});
 
-// 按钮事件
+restartBtn.addEventListener("click", initBoard);
 undoBtn.addEventListener("click", undo);
-restartBtn.addEventListener("click", initGame);
-retryBtn.addEventListener("click", initGame);
+retryBtn.addEventListener("click", initBoard);
+continueBtn.addEventListener("click", () => {
+  gameWinOverlay.style.display = "none";
+});
 
-// 初始化
-initGame();
+initBoard();
