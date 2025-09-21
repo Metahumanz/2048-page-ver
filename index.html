@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>2048 游戏</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>2048</h1>
-  <div class="controls">
-    <button id="restartBtn">重新开始</button>
-    <button id="undoBtn">撤销</button>
-  </div>
-  <div id="game-container"></div>
-  <div id="game-over" class="overlay">
-    <div class="message">Game Over</div>
-    <button id="retryBtn">再来一次</button>
-  </div>
-  <div id="game-win" class="overlay">
-    <div class="message">你赢啦！🎉 达到 2048</div>
-    <button id="continueBtn">继续游戏</button>
+  <div class="game-container">
+    <h1>2048</h1>
+    <div class="controls">
+      <button id="restartBtn">重新开始</button>
+      <button id="undoBtn">撤销</button>
+    </div>
+    <div id="game-board"></div>
+    <div id="game-over" class="overlay">
+      <div class="message">Game Over</div>
+      <button onclick="restartGame()">重新开始</button>
+    </div>
+    <div id="game-win" class="overlay">
+      <div class="message">You Win!</div>
+      <button onclick="continueGame()">继续游戏</button>
+    </div>
   </div>
   <script src="script.js"></script>
 </body>
