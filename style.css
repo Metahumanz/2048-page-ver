@@ -18,7 +18,6 @@ h1 {
 
 #game-container {
   position: relative;
-  text-align: center;
 }
 
 #grid-container {
@@ -29,7 +28,7 @@ h1 {
   background: #bbada0;
   padding: 10px;
   border-radius: 10px;
-  touch-action: none; /* 防止触摸时页面滚动 */
+  position: relative;
 }
 
 .tile {
@@ -43,7 +42,28 @@ h1 {
   font-size: 32px;
   font-weight: bold;
   color: #776e65;
-  transition: transform 0.1s ease-in-out;
+  position: absolute;
+  transition: transform 0.15s ease-in-out;
+  will-change: transform;
+}
+
+.tile.new {
+  animation: pop 0.2s ease;
+}
+
+.tile.merge {
+  animation: merge 0.2s ease;
+}
+
+@keyframes pop {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+@keyframes merge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .tile[data-value="2"] { background: #eee4da; }
@@ -58,33 +78,28 @@ h1 {
 .tile[data-value="1024"] { background: #edc53f; color: #f9f6f2; font-size: 24px; }
 .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; font-size: 24px; }
 
-/* 合并动画 */
-.tile.merge {
-  animation: mergeScale 0.2s ease;
+#controls {
+  margin-top: 15px;
+  text-align: center;
 }
 
-@keyframes mergeScale {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+#controls button {
+  margin: 0 10px;
+  padding: 8px 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  background: #8f7a66;
+  color: #fff;
+  cursor: pointer;
+}
+
+#controls button:hover {
+  background: #9f8a76;
 }
 
 #score-container {
   margin-top: 20px;
   font-size: 20px;
   color: #776e65;
-}
-
-#undo-btn {
-  margin-top: 10px;
-  padding: 8px 16px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  background: #8f7a66;
-  color: white;
-  cursor: pointer;
-}
-#undo-btn:hover {
-  background: #9c8572;
 }
