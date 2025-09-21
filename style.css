@@ -1,0 +1,290 @@
+:root {
+    --grid-size: 4;
+    --cell-size: 100px;
+    --cell-gap: 15px;
+    --border-radius: 8px;
+    --font-size: 35px;
+    
+    /* 颜色变量 */
+    --primary-color: #eee4da;
+    --grid-background: #bbada0;
+    --empty-cell: #cdc1b4;
+    --text-color: #776e65;
+    --bright-text: #f9f6f2;
+    
+    /* 方块颜色 */
+    --tile-2: #eee4da;
+    --tile-4: #ede0c8;
+    --tile-8: #f2b179;
+    --tile-16: #f59563;
+    --tile-32: #f67c5f;
+    --tile-64: #f65e3b;
+    --tile-128: #edcf72;
+    --tile-256: #edcc61;
+    --tile-512: #edc850;
+    --tile-1024: #edc53f;
+    --tile-2048: #edc22e;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #faf8ef;
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 70px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.scores-container {
+    display: flex;
+    gap: 10px;
+}
+
+.score-box {
+    background: var(--grid-background);
+    color: var(--bright-text);
+    padding: 5px 15px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    position: relative;
+}
+
+.score-label {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+#score, #best-score {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.game-intro {
+    margin-bottom: 20px;
+}
+
+.game-container {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.game-message {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(238, 228, 218, 0.73);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: var(--border-radius);
+}
+
+.game-message p {
+    font-size: 30px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.message-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background: #8f7a66;
+    color: var(--bright-text);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: #9f8b77;
+}
+
+.grid-container {
+    position: relative;
+    background: var(--grid-background);
+    border-radius: var(--border-radius);
+    padding: var(--cell-gap);
+    z-index: 1;
+}
+
+.grid-row {
+    display: flex;
+    margin-bottom: var(--cell-gap);
+}
+
+.grid-row:last-child {
+    margin-bottom: 0;
+}
+
+.grid-cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    margin-right: var(--cell-gap);
+    background: var(--empty-cell);
+    border-radius: var(--border-radius);
+}
+
+.grid-cell:last-child {
+    margin-right: 0;
+}
+
+.tile-container {
+    position: absolute;
+    top: var(--cell-gap);
+    left: var(--cell-gap);
+    right: var(--cell-gap);
+    bottom: var(--cell-gap);
+    z-index: 2;
+}
+
+.tile {
+    position: absolute;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border-radius: var(--border-radius);
+    background: var(--tile-2);
+    font-weight: bold;
+    font-size: var(--font-size);
+    text-align: center;
+    line-height: var(--cell-size);
+    transition: all 0.12s ease-in-out;
+    z-index: 10;
+}
+
+.tile-2 {
+    background: var(--tile-2);
+}
+.tile-4 {
+    background: var(--tile-4);
+}
+.tile-8 {
+    background: var(--tile-8);
+    color: var(--bright-text);
+}
+.tile-16 {
+    background: var(--tile-16);
+    color: var(--bright-text);
+}
+.tile-32 {
+    background: var(--tile-32);
+    color: var(--bright-text);
+}
+.tile-64 {
+    background: var(--tile-64);
+    color: var(--bright-text);
+}
+.tile-128 {
+    background: var(--tile-128);
+    color: var(--bright-text);
+    font-size: calc(var(--font-size) - 5px);
+}
+.tile-256 {
+    background: var(--tile-256);
+    color: var(--bright-text);
+    font-size: calc(var(--font-size) - 5px);
+}
+.tile-512 {
+    background: var(--tile-512);
+    color: var(--bright-text);
+    font-size: calc(var(--font-size) - 5px);
+}
+.tile-1024 {
+    background: var(--tile-1024);
+    color: var(--bright-text);
+    font-size: calc(var(--font-size) - 10px);
+}
+.tile-2048 {
+    background: var(--tile-2048);
+    color: var(--bright-text);
+    font-size: calc(var(--font-size) - 10px);
+}
+
+.tile-new {
+    animation: appear 0.2s;
+}
+
+.tile-merged {
+    animation: pop 0.2s;
+}
+
+@keyframes appear {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 520px) {
+    :root {
+        --cell-size: 65px;
+        --font-size: 25px;
+    }
+    
+    h1 {
+        font-size: 50px;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+}
+
+.controls {
+    text-align: center;
+}
