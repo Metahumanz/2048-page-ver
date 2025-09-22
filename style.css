@@ -222,3 +222,11 @@ button:hover {
     max-width: 100px;
   }
 }
+
+/* 添加滑动动画样式 */
+.slide-animation {
+  /* 启用硬件加速，提高动画性能 */
+  will-change: transform;
+  /* 定义过渡效果：transform 属性变化时，持续 0.15 秒，使用 ease-out 缓动函数 */
+  transition: transform 0.15s ease-out;
+}
