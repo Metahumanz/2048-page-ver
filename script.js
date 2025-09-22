@@ -220,12 +220,14 @@ container.addEventListener("touchend", e => {
   const t = e.changedTouches[0];
   let dx = t.clientX - startX;
   let dy = t.clientY - startY;
+  const minSwipeDistance = 20; // 降低阈值，移动端更灵敏
+  
   if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx > 30) move("right");
-    else if (dx < -30) move("left");
+    if (dx > minSwipeDistance) move("right");
+    else if (dx < -minSwipeDistance) move("left");
   } else {
-    if (dy > 30) move("down");
-    else if (dy < -30) move("up");
+    if (dy > minSwipeDistance) move("down");
+    else if (dy < -minSwipeDistance) move("up");
   }
 });
 
