@@ -79,13 +79,6 @@ button:hover {
   padding: 10px;
   border-radius: 10px;
   box-sizing: border-box;
-  position: relative; /* 为绝对定位的子元素提供参考 */
-}
-
-/* 添加网格背景单元格 */
-.grid-cell {
-  background: rgba(238, 228, 218, 0.35);
-  border-radius: 5px;
 }
 
 .tile {
@@ -97,13 +90,6 @@ button:hover {
   font-size: 6vmin;
   font-weight: bold;
   transition: transform 0.15s ease-in-out;
-  position: absolute; /* 改为绝对定位以实现滑动动画 */
-}
-
-/* 滑动动画类 */
-.tile.sliding {
-  transition: transform 0.15s ease-in-out;
-  z-index: 1; /* 确保滑动中的方块在最上层 */
 }
 
 .tile.new {

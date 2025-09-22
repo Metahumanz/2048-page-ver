@@ -9,9 +9,6 @@ let gameOver = false;
 let gameWin = false;
 let continuePlaying = false;
 
-let slidingTiles = []; // 存储正在滑动的方块信息
-let oldBoard = []; // 存储移动前的棋盘状态
-
 const container = document.getElementById("game-container");
 const gameOverOverlay = document.getElementById("game-over");
 const gameWinOverlay = document.getElementById("game-win");
@@ -21,7 +18,6 @@ bestScoreElement.textContent = bestScore;
 
 function init() {
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-  oldBoard = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
   history = [];
   score = 0;
   updateScore(0);
@@ -32,7 +28,7 @@ function init() {
   gameWinOverlay.style.display = "none";
   addRandomTile();
   addRandomTile();
-  render(false);
+  render();
 }
 
 function updateScore(add) {
@@ -51,9 +47,6 @@ function saveHistory() {
     score: score
   });
   if (history.length > 5) history.shift();
-
-  // 保存移动前的状态用于动画
-  oldBoard = board.map(row => [...row]);
 }
 
 function undoMove() {
@@ -62,7 +55,7 @@ function undoMove() {
     board = last.board;
     score = last.score;
     scoreElement.textContent = score;
-    render(false);
+    render();
   }
 }
 
@@ -80,95 +73,29 @@ function addRandomTile() {
   }
 }
 
-// 重写 render 函数以支持滑动动画
-function render(animate = true) {
-  // 清除容器
+function render() {
   container.innerHTML = "";
-  
-  // 先创建网格背景
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      const cell = document.createElement("div");
-      cell.className = "grid-cell";
-      cell.style.gridArea = `${r + 1} / ${c + 1} / ${r + 2} / ${c + 2}`;
-      container.appendChild(cell);
-    }
-  }
-  
-  // 创建数字方块
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
       const value = board[r][c];
+      const tile = document.createElement("div");
+      tile.className = "tile";
       if (value !== 0) {
-        const tile = document.createElement("div");
-        tile.className = "tile";
         tile.textContent = value;
         tile.style.background = getTileColor(value);
         tile.style.color = value > 4 ? "#f9f6f2" : "#776e65";
-        
-        // 设置方块位置
-        const cellSize = (container.offsetWidth - 20) / SIZE; // 减去padding
-        tile.style.width = `${cellSize}px`;
-        tile.style.height = `${cellSize}px`;
-        tile.style.left = `${c * (cellSize + 10) + 10}px`; // 10是gap
-        tile.style.top = `${r * (cellSize + 10) + 10}px`;
-        
-        // 检查是否需要添加动画
-        if (animate && oldBoard && oldBoard.length > 0) {
-          // 查找这个方块在移动前的位置
-          for (let oldR = 0; oldR < SIZE; oldR++) {
-            for (let oldC = 0; oldC < SIZE; oldC++) {
-              if (oldBoard[oldR][oldC] === value) {
-                // 检查是否是从其他位置移动过来的（不是新生成的）
-                const isNewTile = !newTile || (newTile[0] === r && newTile[1] === c);
-                const isMerged = mergedTiles.some(([mr, mc]) => mr === r && mc === c);
-                
-                if ((oldR !== r || oldC !== c) && !isNewTile && !isMerged) {
-                  // 计算移动距离
-                  const startLeft = oldC * (cellSize + 10) + 10;
-                  const startTop = oldR * (cellSize + 10) + 10;
-                  
-                  // 设置起始位置
-                  tile.style.left = `${startLeft}px`;
-                  tile.style.top = `${startTop}px`;
-                  
-                  // 添加滑动类
-                  tile.classList.add("sliding");
-                  
-                  // 使用requestAnimationFrame触发动画
-                  requestAnimationFrame(() => {
-                    tile.style.left = `${c * (cellSize + 10) + 10}px`;
-                    tile.style.top = `${r * (cellSize + 10) + 10}px`;
-                  });
-                  
-                  // 动画结束后移除滑动类
-                  setTimeout(() => {
-                    tile.classList.remove("sliding");
-                  }, 150);
-                }
-                break;
-              }
-            }
-          }
-        }
-        
-        // 添加合并和新方块的动画
         if (mergedTiles.some(([mr, mc]) => mr === r && mc === c)) {
           tile.classList.add("merged");
         }
         if (newTile && newTile[0] === r && newTile[1] === c) {
           tile.classList.add("new");
         }
-        
-        container.appendChild(tile);
       }
+      container.appendChild(tile);
     }
   }
-  
-  // 重置状态
   mergedTiles = [];
   newTile = null;
-  slidingTiles = [];
 }
 
 function getTileColor(value) {
@@ -237,11 +164,8 @@ function move(direction) {
 
   if (moved) {
     addRandomTile();
-    render(true);
+    render();
     checkGameOver();
-  }else {
-    // 如果没有移动，移除保存的旧状态
-    oldBoard = [];
   }
 }
 
