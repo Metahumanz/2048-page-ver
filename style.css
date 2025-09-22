@@ -79,7 +79,6 @@ button:hover {
   padding: 10px;
   border-radius: 10px;
   box-sizing: border-box;
-  position: relative;
 }
 
 .tile {
@@ -90,12 +89,7 @@ button:hover {
   justify-content: center;
   font-size: 6vmin;
   font-weight: bold;
-  transition: all 0.15s ease-in-out;
-  position: absolute;
-  width: calc(25% - 10px);
-  height: calc(25% - 10px);
-  top: 10px;
-  left: 10px;
+  transition: transform 0.15s ease-in-out;
 }
 
 .tile.new {
@@ -104,11 +98,6 @@ button:hover {
 
 .tile.merged {
   animation: merge 0.2s;
-}
-
-/* 滑动动画 */
-.tile.sliding {
-  transition: transform 0.15s ease-in-out;
 }
 
 @keyframes pop {
@@ -181,13 +170,6 @@ button:hover {
     padding: 8px;
   }
   
-  .tile {
-    width: calc(25% - 8px);
-    height: calc(25% - 8px);
-    top: 8px;
-    left: 8px;
-  }
-  
   .message {
     padding: 15px 30px;
     font-size: 20px;
@@ -219,10 +201,6 @@ button:hover {
   
   .tile {
     font-size: 5vmin;
-    width: calc(25% - 6px);
-    height: calc(25% - 6px);
-    top: 6px;
-    left: 6px;
   }
 }
 

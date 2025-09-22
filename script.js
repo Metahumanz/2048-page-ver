@@ -16,9 +16,6 @@ const scoreElement = document.getElementById("score");
 const bestScoreElement = document.getElementById("best-score");
 bestScoreElement.textContent = bestScore;
 
-// 存储当前所有方块元素
-let tileElements = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
-
 function init() {
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
   history = [];
@@ -29,8 +26,6 @@ function init() {
   continuePlaying = false;
   gameOverOverlay.style.display = "none";
   gameWinOverlay.style.display = "none";
-  tileElements = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
-  container.innerHTML = "";
   addRandomTile();
   addRandomTile();
   render();
@@ -79,37 +74,24 @@ function addRandomTile() {
 }
 
 function render() {
-  // 移除所有现有的方块
-  const existingTiles = container.querySelectorAll('.tile');
-  existingTiles.forEach(tile => tile.remove());
-  
-  // 重新创建所有方块
+  container.innerHTML = "";
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
       const value = board[r][c];
+      const tile = document.createElement("div");
+      tile.className = "tile";
       if (value !== 0) {
-        const tile = document.createElement("div");
-        tile.className = "tile";
         tile.textContent = value;
         tile.style.background = getTileColor(value);
         tile.style.color = value > 4 ? "#f9f6f2" : "#776e65";
-        
-        // 设置方块位置
-        const cellSize = container.offsetWidth / SIZE;
-        tile.style.transform = `translate(${c * cellSize}px, ${r * cellSize}px)`;
-        
         if (mergedTiles.some(([mr, mc]) => mr === r && mc === c)) {
           tile.classList.add("merged");
         }
         if (newTile && newTile[0] === r && newTile[1] === c) {
           tile.classList.add("new");
         }
-        
-        container.appendChild(tile);
-        tileElements[r][c] = tile;
-      } else {
-        tileElements[r][c] = null;
       }
+      container.appendChild(tile);
     }
   }
   mergedTiles = [];
@@ -131,10 +113,7 @@ function move(direction) {
   saveHistory();
   let moved = false;
   mergedTiles = [];
-  
-  // 保存移动前的状态
-  const oldBoard = board.map(row => [...row]);
-  
+
   for (let i = 0; i < SIZE; i++) {
     let line = [];
     for (let j = 0; j < SIZE; j++) {
@@ -173,93 +152,20 @@ function move(direction) {
 
       if (board[target[0]][target[1]] !== val) moved = true;
       board[target[0]][target[1]] = val;
+
+      if (val >= 2048 && !gameWin) {
+        gameWin = true;
+        setTimeout(() => {
+          gameWinOverlay.style.display = "flex";
+        }, 100);
+      }
     }
   }
 
   if (moved) {
-    // 先渲染方块，然后添加滑动动画
+    addRandomTile();
     render();
-    
-    // 添加滑动动画
-    animateMove(oldBoard, direction);
-    
-    // 延迟添加新方块，让滑动动画先完成
-    setTimeout(() => {
-      addRandomTile();
-      render();
-      checkGameOver();
-    }, 150);
-    
-    if (board.some(row => row.some(cell => cell >= 2048)) && !gameWin) {
-      gameWin = true;
-      setTimeout(() => {
-        gameWinOverlay.style.display = "flex";
-      }, 300);
-    }
-  }
-}
-
-function animateMove(oldBoard, direction) {
-  const cellSize = container.offsetWidth / SIZE;
-  
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      const oldValue = oldBoard[r][c];
-      const newValue = board[r][c];
-      
-      if (oldValue !== 0) {
-        // 查找这个值移动到了哪里
-        let newR = -1, newC = -1;
-        
-        // 根据移动方向查找新位置
-        if (direction === "left") {
-          for (let nc = 0; nc < SIZE; nc++) {
-            if (board[r][nc] === oldValue && (nc !== c || oldValue !== newValue)) {
-              newR = r;
-              newC = nc;
-              break;
-            }
-          }
-        } else if (direction === "right") {
-          for (let nc = SIZE - 1; nc >= 0; nc--) {
-            if (board[r][nc] === oldValue && (nc !== c || oldValue !== newValue)) {
-              newR = r;
-              newC = nc;
-              break;
-            }
-          }
-        } else if (direction === "up") {
-          for (let nr = 0; nr < SIZE; nr++) {
-            if (board[nr][c] === oldValue && (nr !== r || oldValue !== newValue)) {
-              newR = nr;
-              newC = c;
-              break;
-            }
-          }
-        } else if (direction === "down") {
-          for (let nr = SIZE - 1; nr >= 0; nr--) {
-            if (board[nr][c] === oldValue && (nr !== r || oldValue !== newValue)) {
-              newR = nr;
-              newC = c;
-              break;
-            }
-          }
-        }
-        
-        // 如果找到了新位置且位置发生了变化，添加滑动动画
-        if (newR !== -1 && newC !== -1 && (newR !== r || newC !== c)) {
-          const tile = tileElements[newR][newC];
-          if (tile) {
-            // 先设置到旧位置
-            tile.style.transform = `translate(${c * cellSize}px, ${r * cellSize}px)`;
-            // 然后动画到新位置
-            setTimeout(() => {
-              tile.style.transform = `translate(${newC * cellSize}px, ${newR * cellSize}px)`;
-            }, 10);
-          }
-        }
-      }
-    }
+    checkGameOver();
   }
 }
 
@@ -274,7 +180,7 @@ function checkGameOver() {
   gameOver = true;
   setTimeout(() => {
     gameOverOverlay.style.display = "flex";
-  }, 300);
+  }, 100);
 }
 
 function restartGame() {
@@ -324,5 +230,6 @@ container.addEventListener("touchend", e => {
     else if (dy < -minSwipeDistance) move("up");
   }
 });
+
 
 init();
