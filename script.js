@@ -156,55 +156,89 @@ function move(direction) {
 
   saveHistory();
   let moved = false;
-  // let mergedTiles = []; // 不再需要这个数组
-  let movedTilesInfo = []; // 用于存储移动和新生成方块的信息
+  let movedTilesInfo = [];
 
   // 创建一个临时的起始板，用于记录移动前的位置
   const startBoard = board.map(row => [...row]);
 
   for (let i = 0; i < SIZE; i++) {
     let line = [];
-    // 记录原始索引，用于追踪移动路径
-    let indices = [];
+    let indices = []; // 记录每个值对应的原始位置
+
+    // 第一步：按方向顺序提取非零值和它们的原始位置
     for (let j = 0; j < SIZE; j++) {
       let val, idx;
-      if (direction === "left") { val = startBoard[i][j]; idx = j; }
-      if (direction === "right") { val = startBoard[i][SIZE - 1 - j]; idx = SIZE - 1 - j; }
-      if (direction === "up") { val = startBoard[j][i]; idx = j; }
-      if (direction === "down") { val = startBoard[SIZE - 1 - j][i]; idx = SIZE - 1 - j; }
+      if (direction === "left") { 
+        val = startBoard[i][j]; 
+        idx = j; 
+      }
+      if (direction === "right") { 
+        val = startBoard[i][SIZE - 1 - j]; 
+        idx = SIZE - 1 - j; 
+      }
+      if (direction === "up") { 
+        val = startBoard[j][i]; 
+        idx = j; 
+      }
+      if (direction === "down") { 
+        val = startBoard[SIZE - 1 - j][i]; 
+        idx = SIZE - 1 - j; 
+      }
       
       if (val !== 0) {
-          line.push(val);
-          // 存储原始的行和列
-          indices.push(direction === "left" || direction === "right" ? {r: i, c: idx} : {r: idx, c: i});
+        line.push(val);
+        indices.push(direction === "left" || direction === "right" ? {r: i, c: idx} : {r: idx, c: i});
       }
     }
 
-    // 合并逻辑
+    // 第二步：合并逻辑 - 在合并前记录移动信息
     for (let k = 0; k < line.length; k++) {
       if (k < line.length - 1 && line[k] === line[k + 1]) {
+        // 记录两个合并的方块都要移动到位置 k
+        const sourceInfo1 = indices[k];
+        const sourceInfo2 = indices[k + 1];
+        
+        // 计算目标位置
+        let targetPos;
+        if (direction === "left") targetPos = {r: i, c: k};
+        if (direction === "right") targetPos = {r: i, c: SIZE - 1 - k};
+        if (direction === "up") targetPos = {r: k, c: i};
+        if (direction === "down") targetPos = {r: SIZE - 1 - k, c: i};
+        
+        // 记录第一个方块的移动
+        if (sourceInfo1.r !== targetPos.r || sourceInfo1.c !== targetPos.c) {
+          movedTilesInfo.push({
+            fromRow: sourceInfo1.r,
+            fromCol: sourceInfo1.c,
+            toRow: targetPos.r,
+            toCol: targetPos.c
+          });
+        }
+        
+        // 记录第二个方块的移动（会与第一个方块重合）
+        if (sourceInfo2.r !== targetPos.r || sourceInfo2.c !== targetPos.c) {
+          movedTilesInfo.push({
+            fromRow: sourceInfo2.r,
+            fromCol: sourceInfo2.c,
+            toRow: targetPos.r,
+            toCol: targetPos.c
+          });
+        }
+        
         line[k] *= 2;
         updateScore(line[k]);
         line.splice(k + 1, 1);
-        indices.splice(k + 1, 1); // 同步移除索引
-
-        // 标记合并发生在哪个目标位置 (这部分动画效果可能需要额外处理，这里简化)
-        // let target;
-        // if (direction === "left") target = [i, k];
-        // if (direction === "right") target = [i, SIZE - 1 - k];
-        // if (direction === "up") target = [k, i];
-        // if (direction === "down") target = [SIZE - 1 - k, i];
-        // mergedTiles.push(target); // 如果需要单独的合并动画，可以保留
+        indices.splice(k + 1, 1);
       }
     }
 
+    // 第三步：补齐空位
     while (line.length < SIZE) {
-        line.push(0);
-        indices.push(null); // 对于被填充的空位，索引为null
+      line.push(0);
+      indices.push(null);
     }
 
-
-    // 应用移动后的结果
+    // 第四步：应用移动结果并记录剩余的移动动画
     for (let j = 0; j < SIZE; j++) {
       let newVal = line[j];
       let target, sourceIndexInfo;
@@ -216,34 +250,27 @@ function move(direction) {
 
       const [targetRow, targetCol] = target;
       
-      // 如果值发生变化或位置发生变化，则认为发生了移动
-      if (board[targetRow][targetCol] !== newVal || startBoard[targetRow][targetCol] !== newVal) {
-          moved = true;
+      if (board[targetRow][targetCol] !== newVal) {
+        moved = true;
+        
+        if (newVal !== 0 && sourceIndexInfo) {
+          // 检查是否已经在 movedTilesInfo 中（合并的情况）
+          const alreadyRecorded = movedTilesInfo.some(info =>
+            info.fromRow === sourceIndexInfo.r &&
+            info.fromCol === sourceIndexInfo.c &&
+            info.toRow === targetRow &&
+            info.toCol === targetCol
+          );
           
-          // 记录移动信息
-          if(newVal !== 0) { // 只记录非空格子的移动
-              if(sourceIndexInfo && startBoard[sourceIndexInfo.r][sourceIndexInfo.c] !== 0) {
-                  // 从已有位置移动
-                  movedTilesInfo.push({
-                      fromRow: sourceIndexInfo.r,
-                      fromCol: sourceIndexInfo.c,
-                      toRow: targetRow,
-                      toCol: targetCol
-                  });
-              } else {
-                  // 新生成的方块 (理论上在 addRandomTile 后，这里处理移动时不会遇到)
-                  // 但我们可以在 addRandomTile 后标记它，或者在这里特殊处理
-                  // 为了简化，我们在这里处理：如果目标位置是新值，且起始位置是0，则标记为新
-                  // 但这在当前逻辑下可能不准确，因为移动后目标位置变新值，但起始可能是合并后的。
-                  // 更稳妥的方式是在 addRandomTile 时记录，并传递给 render。
-                  // 这里我们尝试另一种方式：如果起始板该位置是0，而新板不是，则是新块。
-                  // 但这与移动无关。我们只处理移动动画。
-                  // 正确的做法是区分“移动”和“新出现”。
-                  // 我们在 addRandomTile 时记录新块坐标，然后传给 render。
-                  // 但是 render 是在 move 之后调用的。
-                  // 让我们回到在 render 中判断新块的逻辑。
-              }
+          if (!alreadyRecorded && (sourceIndexInfo.r !== targetRow || sourceIndexInfo.c !== targetCol)) {
+            movedTilesInfo.push({
+              fromRow: sourceIndexInfo.r,
+              fromCol: sourceIndexInfo.c,
+              toRow: targetRow,
+              toCol: targetCol
+            });
           }
+        }
       }
       
       board[targetRow][targetCol] = newVal;
@@ -257,32 +284,27 @@ function move(direction) {
     }
   }
 
-  // 在 addRandomTile 之前记录新块坐标，然后传递给 render
-  let newTileCoords = null;
   if (moved) {
-      // 寻找一个空位来添加新方块
-      const empty = [];
-      for (let r = 0; r < SIZE; r++) {
-          for (let c = 0; c < SIZE; c++) {
-              if (board[r][c] === 0) empty.push([r, c]);
-          }
+    // 添加新方块
+    const empty = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) empty.push([r, c]);
       }
-      if (empty.length > 0) {
-          const [r, c] = empty[Math.floor(Math.random() * empty.length)];
-          board[r][c] = Math.random() < 0.9 ? 2 : 4;
-          newTileCoords = [r, c];
-          // 将新方块信息添加到 movedTilesInfo 中，用特殊标记
-          movedTilesInfo.push({
-              fromRow: -1, // 特殊标记表示新生成
-              fromCol: -1,
-              toRow: r,
-              toCol: c
-          });
-      }
-      
-      // 使用 movedTilesInfo 进行渲染
-      render(movedTilesInfo);
-      checkGameOver();
+    }
+    if (empty.length > 0) {
+      const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+      board[r][c] = Math.random() < 0.9 ? 2 : 4;
+      movedTilesInfo.push({
+        fromRow: -1,
+        fromCol: -1,
+        toRow: r,
+        toCol: c
+      });
+    }
+    
+    render(movedTilesInfo);
+    checkGameOver();
   }
 }
 
