@@ -72,14 +72,14 @@ button:hover {
   max-height: 500px;
   background: #bbada0;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 10px;
+  position: relative;
   padding: 10px;
   border-radius: 10px;
   box-sizing: border-box;
+  /* 启用硬件加速 */
+  transform: translate3d(0, 0, 0);
 }
+
 
 .tile {
   background: #cdc1b4;
@@ -89,31 +89,67 @@ button:hover {
   justify-content: center;
   font-size: 6vmin;
   font-weight: bold;
-  transition: transform 0.15s ease-in-out;
+  /* 启用硬件加速 */
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  /* 移除默认的transition，让动画类控制 */
+}
+
+/* 有数字的tile在背景之上 */
+.tile.tile-with-value {
+  z-index: 10;
 }
 
 .tile.new {
-  animation: pop 0.2s;
+  animation: pop 0.2s ease-out;
 }
 
 .tile.merged {
-  animation: merge 0.2s;
+  animation: merge 0.25s ease-out;
+}
+
+/* 滑动动画类 */
+.tile.slide {
+  transition: left 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    top 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 @keyframes pop {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes merge {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(238, 228, 218, 0.7);
   display: none;
   justify-content: center;
@@ -135,41 +171,41 @@ button:hover {
   body {
     padding: 10px;
   }
-  
+
   h1 {
     font-size: 36px;
     margin-bottom: 5px;
   }
-  
+
   .score-board {
     gap: 10px;
     margin-bottom: 10px;
     max-width: 90vmin;
   }
-  
+
   .score-box {
     padding: 8px 15px;
     font-size: 16px;
   }
-  
+
   .controls {
     margin-bottom: 15px;
     max-width: 90vmin;
     gap: 8px;
   }
-  
+
   button {
     padding: 10px 16px;
     font-size: 14px;
     min-width: 100px;
     max-width: 150px;
   }
-  
+
   .game-container {
     gap: 8px;
     padding: 8px;
   }
-  
+
   .message {
     padding: 15px 30px;
     font-size: 20px;
@@ -181,24 +217,24 @@ button:hover {
   h1 {
     font-size: 28px;
   }
-  
+
   .score-box {
     padding: 6px 12px;
     font-size: 14px;
   }
-  
+
   button {
     padding: 8px 12px;
     font-size: 12px;
     min-width: 80px;
     max-width: 120px;
   }
-  
+
   .game-container {
     gap: 6px;
     padding: 6px;
   }
-  
+
   .tile {
     font-size: 5vmin;
   }
@@ -209,24 +245,16 @@ button:hover {
   h1 {
     font-size: 24px;
   }
-  
+
   .score-box {
     padding: 5px 10px;
     font-size: 12px;
   }
-  
+
   button {
     padding: 6px 10px;
     font-size: 11px;
     min-width: 70px;
     max-width: 100px;
   }
-}
-
-/* 添加滑动动画样式 */
-.slide-animation {
-  /* 启用硬件加速，提高动画性能 */
-  will-change: transform;
-  /* 定义过渡效果：transform 属性变化时，持续 0.15 秒，使用 ease-out 缓动函数 */
-  transition: transform 0.15s ease-out;
 }

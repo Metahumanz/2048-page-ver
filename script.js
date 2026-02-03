@@ -61,17 +61,17 @@ function undoMove() {
 }
 
 function addRandomTile() {
-    const empty = [];
-    for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-            if (board[r][c] === 0) empty.push([r, c]);
-        }
+  const empty = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] === 0) empty.push([r, c]);
     }
-    if (empty.length > 0) {
-        const [r, c] = empty[Math.floor(Math.random() * empty.length)];
-        board[r][c] = Math.random() < 0.9 ? 2 : 4;
-        // 不再需要单独标记 newTile，render 时会处理
-    }
+  }
+  if (empty.length > 0) {
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    board[r][c] = Math.random() < 0.9 ? 2 : 4;
+    // 不再需要单独标记 newTile，render 时会处理
+  }
 }
 
 
@@ -79,65 +79,122 @@ function addRandomTile() {
 // 接收 movedTilesInfo 参数，用于动画
 function render(movedTilesInfo) {
   container.innerHTML = "";
+
+  // 硬编码gap值（与CSS中的设置保持一致）
+  const gap = 10;
+  const padding = 10;
+
+  // 获取容器尺寸用于计算绝对位置
+  const containerRect = container.getBoundingClientRect();
+  const cellSize = (containerRect.width - padding * 2 - gap * (SIZE - 1)) / SIZE;
+
+  // 首先绘制背景网格（空格子）
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const bgTile = document.createElement("div");
+      bgTile.className = "tile";
+      bgTile.style.position = "absolute";
+      bgTile.style.width = `${cellSize}px`;
+      bgTile.style.height = `${cellSize}px`;
+      bgTile.style.left = `${padding + c * (cellSize + gap)}px`;
+      bgTile.style.top = `${padding + r * (cellSize + gap)}px`;
+      container.appendChild(bgTile);
+    }
+  }
+
+  // 创建一个映射来标记哪些位置的瓦片是合并产生的
+  const mergedPositions = new Set();
+  if (movedTilesInfo) {
+    // 找出所有合并位置（同一目标位置有多个来源）
+    const targetCounts = {};
+    movedTilesInfo.forEach(info => {
+      if (info.fromRow !== -1) {
+        const key = `${info.toRow},${info.toCol}`;
+        targetCounts[key] = (targetCounts[key] || 0) + 1;
+      }
+    });
+    Object.keys(targetCounts).forEach(key => {
+      if (targetCounts[key] > 1) {
+        mergedPositions.add(key);
+      }
+    });
+  }
+
+  // 然后绘制有数字的方块（在背景之上）
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
       const value = board[r][c];
+      if (value === 0) continue;
+
       const tile = document.createElement("div");
-      tile.className = "tile";
+      tile.className = "tile tile-with-value";
 
-      if (value !== 0) {
-        tile.textContent = value;
-        tile.style.background = getTileColor(value);
-        tile.style.color = value > 4 ? "#f9f6f2" : "#776e65";
+      // 设置绝对定位
+      tile.style.position = "absolute";
+      tile.style.width = `${cellSize}px`;
+      tile.style.height = `${cellSize}px`;
+      tile.style.left = `${padding + c * (cellSize + gap)}px`;
+      tile.style.top = `${padding + r * (cellSize + gap)}px`;
 
-        // --- 动画逻辑 ---
-        // 1. 重置可能存在的动画样式
-        tile.classList.remove("slide-animation");
-        tile.style.transform = "";
-        tile.style.opacity = ""; // 重置可能的淡出效果
+      tile.textContent = value;
+      tile.style.background = getTileColor(value);
+      tile.style.color = value > 4 ? "#f9f6f2" : "#776e65";
 
-        // 2. 检查是否是新生成的方块（值不为0，但起始位置信息为空或为0）
-        const isTileNewlyAdded = movedTilesInfo && movedTilesInfo.some(info =>
-            info.toRow === r && info.toCol === c &&
-            (info.fromRow === -1 && info.fromCol === -1)
+      // --- 动画逻辑 ---
+      // 检查是否是新生成的方块
+      const isTileNewlyAdded = movedTilesInfo && movedTilesInfo.some(info =>
+        info.toRow === r && info.toCol === c &&
+        (info.fromRow === -1 && info.fromCol === -1)
+      );
+
+      if (isTileNewlyAdded) {
+        // 为新方块添加 "new" 类，触发 pop 动画
+        tile.classList.add("new");
+      } else if (movedTilesInfo) {
+        // 检查是否是移动的方块
+        const moveInfo = movedTilesInfo.find(info =>
+          info.toRow === r && info.toCol === c &&
+          !(info.fromRow === -1 && info.fromCol === -1)
         );
 
-        if (isTileNewlyAdded) {
-             // 为新方块添加 "new" 类，触发 pop 动画
-             tile.classList.add("new");
-        } else if (movedTilesInfo) {
-            // 3. 检查是否是移动的方块
-            const moveInfo = movedTilesInfo.find(info =>
-                info.toRow === r && info.toCol === c &&
-                !(info.fromRow === -1 && info.fromCol === -1) // 排除新方块
-            );
+        if (moveInfo) {
+          // 添加滑动动画类
+          tile.classList.add("slide");
 
-            if (moveInfo) {
-                 // 如果是移动的方块
-                 // a. 添加动画类
-                 tile.classList.add("slide-animation");
+          // 计算起始位置
+          const fromLeft = padding + moveInfo.fromCol * (cellSize + gap);
+          const fromTop = padding + moveInfo.fromRow * (cellSize + gap);
 
-                 // b. 计算移动距离 (基于 grid cell 大小)
-                 const dx = (moveInfo.fromCol - moveInfo.toCol) * (100 + 10); // 100% cell width + 10px gap
-                 const dy = (moveInfo.fromRow - moveInfo.toRow) * (100 + 10); // 100% cell height + 10px gap
+          // 设置初始位置（从起始位置开始）
+          tile.style.left = `${fromLeft}px`;
+          tile.style.top = `${fromTop}px`;
 
-                 // c. 应用初始变换，使其从起始位置开始
-                 tile.style.transform = `translate(${dx}%, ${dy}%)`;
+          // 强制浏览器重绘
+          void tile.offsetHeight;
 
-                 // d. 强制浏览器重绘，确保初始变换生效
-                 // getComputedStyle(tile).transform;
+          // 在下一帧动画到目标位置
+          requestAnimationFrame(() => {
+            tile.style.left = `${padding + c * (cellSize + gap)}px`;
+            tile.style.top = `${padding + r * (cellSize + gap)}px`;
+          });
 
-                 // e. 在下一帧应用最终位置变换
-                 requestAnimationFrame(() => {
-                     tile.style.transform = 'translate(0, 0)';
-                 });
-            }
+          // 检查是否是合并位置，添加合并动画
+          const posKey = `${r},${c}`;
+          if (mergedPositions.has(posKey)) {
+            // 在滑动动画结束后添加合并动画
+            setTimeout(() => {
+              tile.classList.add("merged");
+            }, 200); // 与滑动动画时长匹配
+          }
         }
-        // --- 动画逻辑结束 ---
       }
+
       container.appendChild(tile);
     }
   }
+
+  // 设置容器为相对定位以支持绝对定位的子元素
+  container.style.position = "relative";
 }
 
 
@@ -168,26 +225,26 @@ function move(direction) {
     // 第一步：按方向顺序提取非零值和它们的原始位置
     for (let j = 0; j < SIZE; j++) {
       let val, idx;
-      if (direction === "left") { 
-        val = startBoard[i][j]; 
-        idx = j; 
+      if (direction === "left") {
+        val = startBoard[i][j];
+        idx = j;
       }
-      if (direction === "right") { 
-        val = startBoard[i][SIZE - 1 - j]; 
-        idx = SIZE - 1 - j; 
+      if (direction === "right") {
+        val = startBoard[i][SIZE - 1 - j];
+        idx = SIZE - 1 - j;
       }
-      if (direction === "up") { 
-        val = startBoard[j][i]; 
-        idx = j; 
+      if (direction === "up") {
+        val = startBoard[j][i];
+        idx = j;
       }
-      if (direction === "down") { 
-        val = startBoard[SIZE - 1 - j][i]; 
-        idx = SIZE - 1 - j; 
+      if (direction === "down") {
+        val = startBoard[SIZE - 1 - j][i];
+        idx = SIZE - 1 - j;
       }
-      
+
       if (val !== 0) {
         line.push(val);
-        indices.push(direction === "left" || direction === "right" ? {r: i, c: idx} : {r: idx, c: i});
+        indices.push(direction === "left" || direction === "right" ? { r: i, c: idx } : { r: idx, c: i });
       }
     }
 
@@ -197,14 +254,14 @@ function move(direction) {
         // 记录两个合并的方块都要移动到位置 k
         const sourceInfo1 = indices[k];
         const sourceInfo2 = indices[k + 1];
-        
+
         // 计算目标位置
         let targetPos;
-        if (direction === "left") targetPos = {r: i, c: k};
-        if (direction === "right") targetPos = {r: i, c: SIZE - 1 - k};
-        if (direction === "up") targetPos = {r: k, c: i};
-        if (direction === "down") targetPos = {r: SIZE - 1 - k, c: i};
-        
+        if (direction === "left") targetPos = { r: i, c: k };
+        if (direction === "right") targetPos = { r: i, c: SIZE - 1 - k };
+        if (direction === "up") targetPos = { r: k, c: i };
+        if (direction === "down") targetPos = { r: SIZE - 1 - k, c: i };
+
         // 记录第一个方块的移动
         if (sourceInfo1.r !== targetPos.r || sourceInfo1.c !== targetPos.c) {
           movedTilesInfo.push({
@@ -214,7 +271,7 @@ function move(direction) {
             toCol: targetPos.c
           });
         }
-        
+
         // 记录第二个方块的移动（会与第一个方块重合）
         if (sourceInfo2.r !== targetPos.r || sourceInfo2.c !== targetPos.c) {
           movedTilesInfo.push({
@@ -224,7 +281,7 @@ function move(direction) {
             toCol: targetPos.c
           });
         }
-        
+
         line[k] *= 2;
         updateScore(line[k]);
         line.splice(k + 1, 1);
@@ -242,17 +299,17 @@ function move(direction) {
     for (let j = 0; j < SIZE; j++) {
       let newVal = line[j];
       let target, sourceIndexInfo;
-      
+
       if (direction === "left") { target = [i, j]; sourceIndexInfo = indices[j]; }
       if (direction === "right") { target = [i, SIZE - 1 - j]; sourceIndexInfo = indices[j]; }
       if (direction === "up") { target = [j, i]; sourceIndexInfo = indices[j]; }
       if (direction === "down") { target = [SIZE - 1 - j, i]; sourceIndexInfo = indices[j]; }
 
       const [targetRow, targetCol] = target;
-      
+
       if (board[targetRow][targetCol] !== newVal) {
         moved = true;
-        
+
         if (newVal !== 0 && sourceIndexInfo) {
           // 检查是否已经在 movedTilesInfo 中（合并的情况）
           const alreadyRecorded = movedTilesInfo.some(info =>
@@ -261,7 +318,7 @@ function move(direction) {
             info.toRow === targetRow &&
             info.toCol === targetCol
           );
-          
+
           if (!alreadyRecorded && (sourceIndexInfo.r !== targetRow || sourceIndexInfo.c !== targetCol)) {
             movedTilesInfo.push({
               fromRow: sourceIndexInfo.r,
@@ -272,9 +329,9 @@ function move(direction) {
           }
         }
       }
-      
+
       board[targetRow][targetCol] = newVal;
-      
+
       if (newVal >= 2048 && !gameWin) {
         gameWin = true;
         setTimeout(() => {
@@ -302,7 +359,7 @@ function move(direction) {
         toCol: c
       });
     }
-    
+
     render(movedTilesInfo);
     checkGameOver();
   }
@@ -361,7 +418,7 @@ container.addEventListener("touchend", e => {
   let dx = t.clientX - startX;
   let dy = t.clientY - startY;
   const minSwipeDistance = 20; // 降低阈值，移动端更灵敏
-  
+
   if (Math.abs(dx) > Math.abs(dy)) {
     if (dx > minSwipeDistance) move("right");
     else if (dx < -minSwipeDistance) move("left");
