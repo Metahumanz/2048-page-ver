@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2048 调试版</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px;
+            font-size: 12px;
+            border-radius: 5px;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        #debug-info p {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>2048 (调试版)</h1>
+
+    <div class="score-board">
+        <div class="score-box">
+            分数: <span id="score">0</span>
+        </div>
+        <div class="score-box">
+            最高分: <span id="best-score">0</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="undo">撤销 (<span id="undo-count">0</span>/5)</button>
+        <button id="restart">重新开始</button>
+    </div>
+
+    <div class="game-container" id="game-container"></div>
+
+    <div id="game-over" class="overlay">
+        <div class="message">
+            <p>Game Over!</p>
+            <button onclick="restartGame()">再来一次</button>
+        </div>
+    </div>
+
+    <div id="game-win" class="overlay">
+        <div class="message">
+            <p>恭喜达到 2048!</p>
+            <button onclick="continueGame()">继续游戏</button>
+        </div>
+    </div>
+
+    <div id="debug-info">
+        <p><strong>调试信息:</strong></p>
+        <p id="device-type">设备: -</p>
+        <p id="last-action">最后动作: -</p>
+        <p id="animation-count">动画数量: 0</p>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // 添加调试信息
+        const debugInfo = {
+            deviceType: document.getElementById('device-type'),
+            lastAction: document.getElementById('last-action'),
+            animationCount: document.getElementById('animation-count')
+        };
+
+        // 检测设备类型
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        debugInfo.deviceType.textContent = `设备: ${isMobile ? '移动端' : '桌面端'}`;
+
+        // 监听触摸事件
+        let touchCount = 0;
+        container.addEventListener('touchstart', () => {
+            touchCount++;
+            debugInfo.lastAction.textContent = `最后动作: 触摸 #${touchCount}`;
+        });
+
+        // 监听键盘事件
+        let keyCount = 0;
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                keyCount++;
+                debugInfo.lastAction.textContent = `最后动作: 按键 ${e.key} #${keyCount}`;
+            }
+        });
+
+        // 监听动画
+        const originalRender = window.render;
+        window.render = function (movedTilesInfo) {
+            if (movedTilesInfo) {
+                debugInfo.animationCount.textContent = `动画数量: ${movedTilesInfo.length}`;
+            }
+            return originalRender.call(this, movedTilesInfo);
+        };
+    </script>
+</body>
+
+</html>

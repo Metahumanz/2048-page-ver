@@ -13,6 +13,7 @@ const gameOverOverlay = document.getElementById("game-over");
 const gameWinOverlay = document.getElementById("game-win");
 const scoreElement = document.getElementById("score");
 const bestScoreElement = document.getElementById("best-score");
+const undoCountElement = document.getElementById("undo-count");
 bestScoreElement.textContent = bestScore;
 
 function init() {
@@ -47,6 +48,13 @@ function saveHistory() {
     score: score
   });
   if (history.length > 5) history.shift();
+  updateUndoCount();
+}
+
+function updateUndoCount() {
+  if (undoCountElement) {
+    undoCountElement.textContent = history.length;
+  }
 }
 
 function undoMove() {
@@ -55,6 +63,7 @@ function undoMove() {
     board = last.board;
     score = last.score;
     scoreElement.textContent = score;
+    updateUndoCount();
     // 撤销操作也不需要动画
     render(null);
   }
@@ -158,24 +167,28 @@ function render(movedTilesInfo) {
         );
 
         if (moveInfo) {
-          // 添加滑动动画类
-          tile.classList.add("slide");
-
-          // 计算起始位置
+          // 计算起始位置和目标位置
           const fromLeft = padding + moveInfo.fromCol * (cellSize + gap);
           const fromTop = padding + moveInfo.fromRow * (cellSize + gap);
+          const toLeft = padding + c * (cellSize + gap);
+          const toTop = padding + r * (cellSize + gap);
 
-          // 设置初始位置（从起始位置开始）
+          // 重置为初始位置（不设置transition）
           tile.style.left = `${fromLeft}px`;
           tile.style.top = `${fromTop}px`;
 
-          // 强制浏览器重绘
-          void tile.offsetHeight;
+          // 先添加到DOM
+          container.appendChild(tile);
 
-          // 在下一帧动画到目标位置
+          // 使用双RAF确保动画在移动端也能正常工作
           requestAnimationFrame(() => {
-            tile.style.left = `${padding + c * (cellSize + gap)}px`;
-            tile.style.top = `${padding + r * (cellSize + gap)}px`;
+            requestAnimationFrame(() => {
+              // 添加transition类
+              tile.classList.add("slide");
+              // 移动到目标位置
+              tile.style.left = `${toLeft}px`;
+              tile.style.top = `${toTop}px`;
+            });
           });
 
           // 检查是否是合并位置，添加合并动画
@@ -184,8 +197,11 @@ function render(movedTilesInfo) {
             // 在滑动动画结束后添加合并动画
             setTimeout(() => {
               tile.classList.add("merged");
-            }, 200); // 与滑动动画时长匹配
+            }, 200);
           }
+
+          // 跳过后面的appendChild（已经添加过了）
+          continue;
         }
       }
 
